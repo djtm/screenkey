@@ -32,5 +32,5 @@ setup(name='screenkey', version='0.9',
       packages=['Screenkey'],
       setup_requires=['setuptools', 'python-distutils-extra'],
       data_files=[('share/applications', ['data/screenkey.desktop']),
-                  ('share/doc/screenkey', ['README.rst', 'NEWS.rst'])],
-)
+                  ('share/doc/screenkey', ['README.rst', 'NEWS.rst'])], install_requires=['inflect']
+      )
