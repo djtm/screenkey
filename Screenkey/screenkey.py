@@ -5,18 +5,20 @@
 
 from __future__ import print_function, unicode_literals, division
 
-from . import *
-from .labelmanager import LabelManager
-
-from threading import Timer
 import json
 import os
 import subprocess
+from threading import Timer
 
 import glib
+
+from . import *
+from .labelmanager import LabelManager
+
 glib.threads_init()
 
 import pygtk
+
 pygtk.require('2.0')
 
 import gtk
@@ -77,7 +79,11 @@ class Screenkey(gtk.Window):
         self.label.set_ellipsize(pango.ELLIPSIZE_START)
         self.label.set_justify(gtk.JUSTIFY_CENTER)
         self.label.show()
-        self.add(self.label)
+        # self.add(self.label)
+
+        self.image = gtk.Image()
+        self.image.show()
+        # self.add(self.image)
 
         self.set_gravity(gtk.gdk.GRAVITY_CENTER)
         self.connect("configure-event", self.on_configure)
@@ -107,11 +113,9 @@ class Screenkey(gtk.Window):
         if self.options.persist:
             self.show()
 
-
     def quit(self, widget, data=None):
         self.labelmngr.stop()
         gtk.main_quit()
-
 
     def load_state(self):
         """Load stored options"""
@@ -131,7 +135,6 @@ class Screenkey(gtk.Window):
 
         return options
 
-
     def store_state(self, options):
         """Store options"""
         try:
@@ -141,7 +144,6 @@ class Screenkey(gtk.Window):
         except IOError:
             self.logger.debug("Cannot open %s." % self.STATE_FILE)
 
-
     def set_active_monitor(self, monitor):
         scr = self.get_screen()
         if monitor >= scr.get_n_monitors():
@@ -150,10 +152,8 @@ class Screenkey(gtk.Window):
             self.monitor = monitor
         self.update_geometry()
 
-
     def on_monitors_changed(self, *_):
         self.set_active_monitor(self.monitor)
-
 
     def override_font_attributes(self, attr, text):
         window_width, window_height = self.get_size()
@@ -162,19 +162,16 @@ class Screenkey(gtk.Window):
         attr.insert(pango.AttrFamily(self.font.get_family(), 0, -1))
         attr.insert(pango.AttrWeight(self.font.get_weight(), 0, -1))
 
-
     def update_label(self):
         attr = self.label.get_attributes()
         text = self.label.get_text()
         self.override_font_attributes(attr, text)
         self.label.set_attributes(attr)
 
-
     def update_colors(self):
         self.label.modify_fg(gtk.STATE_NORMAL, gtk.gdk.color_parse(self.options.font_color))
         self.modify_bg(gtk.STATE_NORMAL, gtk.gdk.color_parse(self.options.bg_color))
         self.set_opacity(self.options.opacity)
-
 
     def on_configure(self, *_):
         window_x, window_y = self.get_position()
@@ -190,7 +187,6 @@ class Screenkey(gtk.Window):
         self.label.set_padding(window_width // 100, 0)
 
         self.update_label()
-
 
     def update_geometry(self, configure=False):
         if self.options.position == 'fixed' and self.options.geometry is not None:
@@ -220,25 +216,17 @@ class Screenkey(gtk.Window):
             window_y = area_geometry[1] + area_geometry[3] * 9 // 10 - window_height
         self.move(area_geometry[0], window_y)
 
-
     def on_statusicon_popup(self, widget, button, timestamp, data=None):
         if button == 3 and data:
             data.show()
             data.popup(None, None, gtk.status_icon_position_menu,
                        3, timestamp, widget)
 
-
     def show(self):
         self.update_geometry()
         super(Screenkey, self).show()
 
-
-    def on_label_change(self, markup):
-        attr, text, _ = pango.parse_markup(markup)
-        self.override_font_attributes(attr, text)
-        self.label.set_text(text)
-        self.label.set_attributes(attr)
-
+    def timed_show(self):
         if not self.get_property('visible'):
             self.show()
         if self.timer_hide:
@@ -251,6 +239,32 @@ class Screenkey(gtk.Window):
         self.timer_min = Timer(self.options.recent_thr * 2, self.on_timeout_min)
         self.timer_min.start()
 
+    def on_label_change(self, markup):
+        child = self.get_child()
+
+        if child != self.label:
+            if child is not None:
+                self.remove(child)
+
+            self.add(self.label)
+
+        attr, text, _ = pango.parse_markup(markup)
+        self.override_font_attributes(attr, text)
+        self.label.set_text(text)
+        self.label.set_attributes(attr)
+        self.timed_show()
+
+    def on_image_change(self, image_file):
+        child = self.get_child()
+
+        if child != self.image:
+            if child is not None:
+                self.remove(child)
+
+            self.add(self.image)
+
+        self.image.set_from_file("images/%s.png" % image_file)
+        self.timed_show()
 
     def on_timeout_main(self):
         if not self.options.persist:
@@ -258,18 +272,16 @@ class Screenkey(gtk.Window):
         self.label.set_text('')
         self.labelmngr.clear()
 
-
     def on_timeout_min(self):
         attr = self.label.get_attributes()
         attr.change(pango.AttrUnderline(pango.UNDERLINE_NONE, 0, -1))
         self.label.set_attributes(attr)
 
-
     def restart_labelmanager(self):
         self.logger.debug("Restarting LabelManager.")
         if self.labelmngr:
             self.labelmngr.stop()
-        self.labelmngr = LabelManager(self.on_label_change, logger=self.logger,
+        self.labelmngr = LabelManager(self.on_label_change, self.on_image_change, logger=self.logger,
                                       key_mode=self.options.key_mode,
                                       bak_mode=self.options.bak_mode,
                                       mods_mode=self.options.mods_mode,
@@ -283,12 +295,10 @@ class Screenkey(gtk.Window):
                                       pango_ctx=self.label.get_pango_context())
         self.labelmngr.start()
 
-
     def on_change_mode(self):
         if not self.enabled:
             return
         self.restart_labelmanager()
-
 
     def on_show_keys(self, widget, data=None):
         self.enabled = widget.get_active()
@@ -299,16 +309,13 @@ class Screenkey(gtk.Window):
             self.logger.debug("Screenkey disabled.")
             self.labelmngr.stop()
 
-
     def on_preferences_dialog(self, widget=None, data=None):
         self.prefs.show()
-
 
     def on_preferences_changed(self, widget=None, data=None):
         self.store_state(self.options)
         self.prefs.hide()
         return True
-
 
     def make_preferences_dialog(self):
         # TODO: switch to something declarative or at least clean-up the following mess
@@ -669,7 +676,6 @@ class Screenkey(gtk.Window):
         prefs.set_default_response(gtk.RESPONSE_CLOSE)
         prefs.vbox.show_all()
 
-
     def make_menu(self):
         self.menu = menu = gtk.Menu()
 
@@ -699,7 +705,6 @@ class Screenkey(gtk.Window):
         menu.append(image)
         menu.show()
 
-
     def make_systray(self):
         try:
             import appindicator
@@ -716,7 +721,6 @@ class Screenkey(gtk.Window):
             self.systray.connect("popup-menu", self.on_statusicon_popup, self.menu)
             self.logger.debug("Using StatusIcon.")
 
-
     def make_about_dialog(self):
         self.about = about = gtk.AboutDialog()
         about.set_program_name(APP_NAME)
@@ -727,7 +731,7 @@ class Screenkey(gtk.Window):
         """)
         about.set_comments(APP_DESC)
         about.set_documenters(
-                ["José María Quiroga <pepelandia@gmail.com>"]
+            ["José María Quiroga <pepelandia@gmail.com>"]
         )
         about.set_website(APP_URL)
         about.set_icon_name('preferences-desktop-keyboard-shortcuts')
@@ -735,10 +739,8 @@ class Screenkey(gtk.Window):
         about.connect("response", about.hide_on_delete)
         about.connect("delete-event", about.hide_on_delete)
 
-
     def on_about_dialog(self, widget, data=None):
         self.about.show()
-
 
 
 def run():

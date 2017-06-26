@@ -5,11 +5,13 @@
 
 from __future__ import print_function, unicode_literals, absolute_import, generators
 
-from .inputlistener import InputListener, InputType
-import glib
-
 from collections import namedtuple
 from datetime import datetime
+
+import glib
+import inflect
+
+from .inputlistener import InputListener, InputType
 
 # Key replacement data:
 #
@@ -20,92 +22,92 @@ from datetime import datetime
 # spaced:  strong spacing is required around the symbol
 
 ReplData = namedtuple('ReplData', ['value', 'font'])
-KeyRepl  = namedtuple('KeyRepl',  ['bk_stop', 'silent', 'spaced', 'repl'])
-KeyData  = namedtuple('KeyData',  ['stamp', 'is_ctrl', 'bk_stop', 'silent', 'spaced', 'markup'])
+KeyRepl = namedtuple('KeyRepl', ['bk_stop', 'silent', 'spaced', 'repl'])
+KeyData = namedtuple('KeyData', ['stamp', 'is_ctrl', 'bk_stop', 'silent', 'spaced', 'markup'])
 
 REPLACE_SYMS = {
     # Regular keys
-    'Escape':       KeyRepl(True,  True,  True,  _('Esc')),
-    'Tab':          KeyRepl(True,  False, False, _('↹')),
-    'ISO_Left_Tab': KeyRepl(True,  False, False, _('↹')),
-    'Return':       KeyRepl(True,  False, False, _('⏎')),
-    'space':        KeyRepl(False, False, False, _('␣')),
-    'BackSpace':    KeyRepl(True,  True,  False, _('⌫')),
-    'Caps_Lock':    KeyRepl(True,  True,  True,  _('Caps')),
-    'F1':           KeyRepl(True,  True,  True,  _('F1')),
-    'F2':           KeyRepl(True,  True,  True,  _('F2')),
-    'F3':           KeyRepl(True,  True,  True,  _('F3')),
-    'F4':           KeyRepl(True,  True,  True,  _('F4')),
-    'F5':           KeyRepl(True,  True,  True,  _('F5')),
-    'F6':           KeyRepl(True,  True,  True,  _('F6')),
-    'F7':           KeyRepl(True,  True,  True,  _('F7')),
-    'F8':           KeyRepl(True,  True,  True,  _('F8')),
-    'F9':           KeyRepl(True,  True,  True,  _('F9')),
-    'F10':          KeyRepl(True,  True,  True,  _('F10')),
-    'F11':          KeyRepl(True,  True,  True,  _('F11')),
-    'F12':          KeyRepl(True,  True,  True,  _('F12')),
-    'Up':           KeyRepl(True,  True,  False, _('↑')),
-    'Left':         KeyRepl(True,  True,  False, _('←')),
-    'Right':        KeyRepl(True,  True,  False, _('→')),
-    'Down':         KeyRepl(True,  True,  False, _('↓')),
-    'Prior':        KeyRepl(True,  True,  True,  _('PgUp')),
-    'Next':         KeyRepl(True,  True,  True,  _('PgDn')),
-    'Home':         KeyRepl(True,  True,  True,  _('Home')),
-    'End':          KeyRepl(True,  True,  True,  _('End')),
-    'Insert':       KeyRepl(False, True,  True,  _('Ins')),
-    'Delete':       KeyRepl(True,  False, True,  _('Del')),
-    'KP_End':       KeyRepl(False, False, True,  _('(1)')),
-    'KP_Down':      KeyRepl(False, False, True,  _('(2)')),
-    'KP_Next':      KeyRepl(False, False, True,  _('(3)')),
-    'KP_Left':      KeyRepl(False, False, True,  _('(4)')),
-    'KP_Begin':     KeyRepl(False, False, True,  _('(5)')),
-    'KP_Right':     KeyRepl(False, False, True,  _('(6)')),
-    'KP_Home':      KeyRepl(False, False, True,  _('(7)')),
-    'KP_Up':        KeyRepl(False, False, True,  _('(8)')),
-    'KP_Prior':     KeyRepl(False, False, True,  _('(9)')),
-    'KP_Insert':    KeyRepl(False, False, True,  _('(0)')),
-    'KP_Delete':    KeyRepl(False, False, True,  _('(.)')),
-    'KP_Add':       KeyRepl(False, False, True,  _('(+)')),
-    'KP_Subtract':  KeyRepl(False, False, True,  _('(-)')),
-    'KP_Multiply':  KeyRepl(False, False, True,  _('(*)')),
-    'KP_Divide':    KeyRepl(False, False, True,  _('(/)')),
-    'KP_Enter':     KeyRepl(True,  False, False, _('⏎')),
-    'Num_Lock':     KeyRepl(False, True,  True,  _('NumLck')),
-    'Scroll_Lock':  KeyRepl(False, True,  True,  _('ScrLck')),
-    'Pause':        KeyRepl(False, True,  True,  _('Pause')),
-    'Break':        KeyRepl(False, True,  True,  _('Break')),
-    'Print':        KeyRepl(False, True,  True,  _('Print')),
-    'Multi_key':    KeyRepl(False, True,  True,  _('Compose')),
+    'Escape': KeyRepl(True, True, True, _('Esc')),
+    'Tab': KeyRepl(True, False, False, _('↹')),
+    'ISO_Left_Tab': KeyRepl(True, False, False, _('↹')),
+    'Return': KeyRepl(True, False, False, _('⏎')),
+    'space': KeyRepl(False, False, False, _('␣')),
+    'BackSpace': KeyRepl(True, True, False, _('⌫')),
+    'Caps_Lock': KeyRepl(True, True, True, _('Caps')),
+    'F1': KeyRepl(True, True, True, _('F1')),
+    'F2': KeyRepl(True, True, True, _('F2')),
+    'F3': KeyRepl(True, True, True, _('F3')),
+    'F4': KeyRepl(True, True, True, _('F4')),
+    'F5': KeyRepl(True, True, True, _('F5')),
+    'F6': KeyRepl(True, True, True, _('F6')),
+    'F7': KeyRepl(True, True, True, _('F7')),
+    'F8': KeyRepl(True, True, True, _('F8')),
+    'F9': KeyRepl(True, True, True, _('F9')),
+    'F10': KeyRepl(True, True, True, _('F10')),
+    'F11': KeyRepl(True, True, True, _('F11')),
+    'F12': KeyRepl(True, True, True, _('F12')),
+    'Up': KeyRepl(True, True, False, _('↑')),
+    'Left': KeyRepl(True, True, False, _('←')),
+    'Right': KeyRepl(True, True, False, _('→')),
+    'Down': KeyRepl(True, True, False, _('↓')),
+    'Prior': KeyRepl(True, True, True, _('PgUp')),
+    'Next': KeyRepl(True, True, True, _('PgDn')),
+    'Home': KeyRepl(True, True, True, _('Home')),
+    'End': KeyRepl(True, True, True, _('End')),
+    'Insert': KeyRepl(False, True, True, _('Ins')),
+    'Delete': KeyRepl(True, False, True, _('Del')),
+    'KP_End': KeyRepl(False, False, True, _('(1)')),
+    'KP_Down': KeyRepl(False, False, True, _('(2)')),
+    'KP_Next': KeyRepl(False, False, True, _('(3)')),
+    'KP_Left': KeyRepl(False, False, True, _('(4)')),
+    'KP_Begin': KeyRepl(False, False, True, _('(5)')),
+    'KP_Right': KeyRepl(False, False, True, _('(6)')),
+    'KP_Home': KeyRepl(False, False, True, _('(7)')),
+    'KP_Up': KeyRepl(False, False, True, _('(8)')),
+    'KP_Prior': KeyRepl(False, False, True, _('(9)')),
+    'KP_Insert': KeyRepl(False, False, True, _('(0)')),
+    'KP_Delete': KeyRepl(False, False, True, _('(.)')),
+    'KP_Add': KeyRepl(False, False, True, _('(+)')),
+    'KP_Subtract': KeyRepl(False, False, True, _('(-)')),
+    'KP_Multiply': KeyRepl(False, False, True, _('(*)')),
+    'KP_Divide': KeyRepl(False, False, True, _('(/)')),
+    'KP_Enter': KeyRepl(True, False, False, _('⏎')),
+    'Num_Lock': KeyRepl(False, True, True, _('NumLck')),
+    'Scroll_Lock': KeyRepl(False, True, True, _('ScrLck')),
+    'Pause': KeyRepl(False, True, True, _('Pause')),
+    'Break': KeyRepl(False, True, True, _('Break')),
+    'Print': KeyRepl(False, True, True, _('Print')),
+    'Multi_key': KeyRepl(False, True, True, _('Compose')),
 
     # Multimedia keys
-    'XF86AudioMute':         KeyRepl(True, True, True, [ReplData(_('\uf026'),  'FontAwesome'),
-                                                        ReplData(_('Mute'),    None)]),
-    'XF86AudioMicMute':      KeyRepl(True, True, True, [ReplData(_('\uf131'),  'FontAwesome'),
-                                                        ReplData(_('Rec'),     None)]),
-    'XF86AudioRaiseVolume':  KeyRepl(True, True, True, [ReplData(_('\uf028'),  'FontAwesome'),
-                                                        ReplData(_('Vol+'),    None)]),
-    'XF86AudioLowerVolume':  KeyRepl(True, True, True, [ReplData(_('\uf027'),  'FontAwesome'),
-                                                        ReplData(_('Vol-'),    None)]),
-    'XF86AudioPrev':         KeyRepl(True, True, True, [ReplData(_('\uf048'),  'FontAwesome'),
-                                                        ReplData(_('Prev'),    None)]),
-    'XF86AudioNext':         KeyRepl(True, True, True, [ReplData(_('\uf051'),  'FontAwesome'),
-                                                        ReplData(_('Next'),    None)]),
-    'XF86AudioPlay':         KeyRepl(True, True, True, [ReplData(_('\uf04b'),  'FontAwesome'),
-                                                        ReplData(_('▶'),       None)]),
-    'XF86AudioStop':         KeyRepl(True, True, True, [ReplData(_('\uf04d'),  'FontAwesome'),
-                                                        ReplData(_('⬛'),       None)]),
-    'XF86Eject':             KeyRepl(True, True, True, [ReplData(_('\uf052'),  'FontAwesome'),
-                                                        ReplData(_('Eject'),   None)]),
+    'XF86AudioMute': KeyRepl(True, True, True, [ReplData(_('\uf026'), 'FontAwesome'),
+                                                ReplData(_('Mute'), None)]),
+    'XF86AudioMicMute': KeyRepl(True, True, True, [ReplData(_('\uf131'), 'FontAwesome'),
+                                                   ReplData(_('Rec'), None)]),
+    'XF86AudioRaiseVolume': KeyRepl(True, True, True, [ReplData(_('\uf028'), 'FontAwesome'),
+                                                       ReplData(_('Vol+'), None)]),
+    'XF86AudioLowerVolume': KeyRepl(True, True, True, [ReplData(_('\uf027'), 'FontAwesome'),
+                                                       ReplData(_('Vol-'), None)]),
+    'XF86AudioPrev': KeyRepl(True, True, True, [ReplData(_('\uf048'), 'FontAwesome'),
+                                                ReplData(_('Prev'), None)]),
+    'XF86AudioNext': KeyRepl(True, True, True, [ReplData(_('\uf051'), 'FontAwesome'),
+                                                ReplData(_('Next'), None)]),
+    'XF86AudioPlay': KeyRepl(True, True, True, [ReplData(_('\uf04b'), 'FontAwesome'),
+                                                ReplData(_('▶'), None)]),
+    'XF86AudioStop': KeyRepl(True, True, True, [ReplData(_('\uf04d'), 'FontAwesome'),
+                                                ReplData(_('⬛'), None)]),
+    'XF86Eject': KeyRepl(True, True, True, [ReplData(_('\uf052'), 'FontAwesome'),
+                                            ReplData(_('Eject'), None)]),
     'XF86MonBrightnessDown': KeyRepl(True, True, True, [ReplData(_('\uf185-'), 'FontAwesome'),
                                                         ReplData(_('Bright-'), None)]),
-    'XF86MonBrightnessUp':   KeyRepl(True, True, True, [ReplData(_('\uf185+'), 'FontAwesome'),
-                                                        ReplData(_('Bright+'), None)]),
-    'XF86Display':           KeyRepl(True, True, True, [ReplData(_('\uf108'),  'FontAwesome'),
-                                                        ReplData(_('Display'), None)]),
-    'XF86WLAN':              KeyRepl(True, True, True, [ReplData(_('\uf1eb'),  'FontAwesome'),
-                                                        ReplData(_('WLAN'),    None)]),
-    'XF86Search':            KeyRepl(True, True, True, [ReplData(_('\uf002'),  'FontAwesome'),
-                                                        ReplData(_('Search'),  None)]),
+    'XF86MonBrightnessUp': KeyRepl(True, True, True, [ReplData(_('\uf185+'), 'FontAwesome'),
+                                                      ReplData(_('Bright+'), None)]),
+    'XF86Display': KeyRepl(True, True, True, [ReplData(_('\uf108'), 'FontAwesome'),
+                                              ReplData(_('Display'), None)]),
+    'XF86WLAN': KeyRepl(True, True, True, [ReplData(_('\uf1eb'), 'FontAwesome'),
+                                           ReplData(_('WLAN'), None)]),
+    'XF86Search': KeyRepl(True, True, True, [ReplData(_('\uf002'), 'FontAwesome'),
+                                             ReplData(_('Search'), None)]),
 }
 
 WHITESPACE_SYMS = {'Tab', 'ISO_Left_Tab', 'Return', 'space', 'KP_Enter'}
@@ -117,20 +119,20 @@ MODS_MAP = {
 }
 
 MODS_SYMS = {
-    'shift':  {'Shift_L', 'Shift_R'},
-    'ctrl':   {'Control_L', 'Control_R'},
-    'alt':    {'Alt_L', 'Alt_R', 'Meta_L', 'Meta_R'},
-    'super':  {'Super_L', 'Super_R'},
-    'hyper':  {'Hyper_L', 'Hyper_R'},
+    'shift': {'Shift_L', 'Shift_R'},
+    'ctrl': {'Control_L', 'Control_R'},
+    'alt': {'Alt_L', 'Alt_R', 'Meta_L', 'Meta_R'},
+    'super': {'Super_L', 'Super_R'},
+    'hyper': {'Hyper_L', 'Hyper_R'},
     'alt_gr': {'ISO_Level3_Shift'},
 }
 
 REPLACE_MODS = {
-    'shift':  (_('Shift+'), 'S-',     _('⇧+')),
-    'ctrl':   (_('Ctrl+'),  'C-',     _('⌘+')),
-    'alt':    (_('Alt+'),   'M-',     _('⌥+')),
-    'super':  (_('Super+'), 's-',     _('Super+')),
-    'hyper':  (_('Hyper+'), 'H-',     _('Hyper+')),
+    'shift': (_('Shift+'), 'S-', _('⇧+')),
+    'ctrl': (_('Ctrl+'), 'C-', _('⌘+')),
+    'alt': (_('Alt+'), 'M-', _('⌥+')),
+    'super': (_('Super+'), 's-', _('Super+')),
+    'hyper': (_('Hyper+'), 'H-', _('Hyper+')),
     'alt_gr': (_('AltGr+'), 'AltGr-', _('AltGr+')),
 }
 
@@ -143,14 +145,15 @@ def keysym_to_mod(keysym):
 
 
 class LabelManager(object):
-    def __init__(self, listener, logger, key_mode, bak_mode, mods_mode, mods_only,
+    def __init__(self, label_listener, image_listener, logger, key_mode, bak_mode, mods_mode, mods_only,
                  multiline, vis_shift, vis_space, recent_thr, compr_cnt, ignore, pango_ctx):
         self.key_mode = key_mode
         self.bak_mode = bak_mode
         self.mods_mode = mods_mode
         self.mods_index = MODS_MAP[mods_mode]
         self.logger = logger
-        self.listener = listener
+        self.label_listener = label_listener
+        self.image_listener = image_listener
         self.data = []
         self.enabled = True
         self.mods_only = mods_only
@@ -163,20 +166,19 @@ class LabelManager(object):
         self.kl = None
         self.font_families = {x.get_name() for x in pango_ctx.list_families()}
         self.update_replacement_map()
-
+        self.inflect_engine = inflect.engine()
 
     def __del__(self):
         self.stop()
-
 
     def start(self):
         self.stop()
         compose = (self.key_mode == 'composed')
         translate = (self.key_mode in ['composed', 'translated'])
-        self.kl = InputListener(self.key_press, InputType.keyboard, compose, translate)
+        self.kl = InputListener(self.key_press, self.btn_press, InputType.keyboard | InputType.button, compose,
+                                translate)
         self.kl.start()
         self.logger.debug("Thread started.")
-
 
     def stop(self):
         if self.kl:
@@ -185,10 +187,8 @@ class LabelManager(object):
             self.kl.join()
             self.kl = None
 
-
     def clear(self):
         self.data = []
-
 
     def get_repl_markup(self, repl):
         if type(repl) != list:
@@ -200,14 +200,13 @@ class LabelManager(object):
                 return unicode(glib.markup_escape_text(c.value))
             elif c.font in self.font_families:
                 return '<span font_family="' + c.font + '">' + \
-                    unicode(glib.markup_escape_text(c.value)) + '</span>'
+                       unicode(glib.markup_escape_text(c.value)) + '</span>'
 
     def update_replacement_map(self):
         self.replace_syms = {}
         for k, v in REPLACE_SYMS.items():
             markup = self.get_repl_markup(v.repl)
             self.replace_syms[k] = KeyRepl(v.bk_stop, v.silent, v.spaced, markup)
-
 
     def update_text(self):
         markup = ""
@@ -264,8 +263,7 @@ class LabelManager(object):
         if recent:
             markup += '</u>'
         self.logger.debug("Label updated: %s." % repr(markup))
-        self.listener(markup)
-
+        self.label_listener(markup)
 
     def key_press(self, event):
         if event.pressed == False:
@@ -285,7 +283,7 @@ class LabelManager(object):
         # Stealth enable/disable handling
         for mod in ['shift', 'ctrl', 'alt']:
             if not event.repeated and event.modifiers[mod] \
-               and event.symbol in MODS_SYMS[mod]:
+                    and event.symbol in MODS_SYMS[mod]:
                 self.enabled = not self.enabled
                 state = 'enabled' if self.enabled else 'disabled'
                 self.logger.info("{mod}+{mod} detected: screenkey {state}".format(
@@ -307,7 +305,6 @@ class LabelManager(object):
         if update:
             self.update_text()
 
-
     def key_normal_mode(self, event):
         # Visible modifiers
         mod = ''
@@ -317,7 +314,7 @@ class LabelManager(object):
 
         # Backspace handling
         if event.symbol == 'BackSpace' and not self.mods_only and \
-           mod == '' and not event.modifiers['shift']:
+                        mod == '' and not event.modifiers['shift']:
             key_repl = self.replace_syms.get(event.symbol)
             if self.bak_mode == 'normal':
                 self.data.append(KeyData(datetime.now(), False, *key_repl))
@@ -351,9 +348,9 @@ class LabelManager(object):
                 key_repl = KeyRepl(False, False, len(repl) > 1, markup)
 
         if event.modifiers['shift'] and \
-           (replaced or (mod != '' and \
-                         self.vis_shift and \
-                         self.mods_mode != 'emacs')):
+                (replaced or (mod != '' and \
+                                      self.vis_shift and \
+                                          self.mods_mode != 'emacs')):
             # add back shift for translated keys
             mod = mod + REPLACE_MODS['shift'][self.mods_index]
 
@@ -395,7 +392,6 @@ class LabelManager(object):
 
         return False
 
-
     def key_raw_mode(self, event):
         # modifiers
         mod = ''
@@ -432,11 +428,24 @@ class LabelManager(object):
                                      key_repl.silent, key_repl.spaced, repl))
         return True
 
-
     def key_keysyms_mode(self, event):
         if event.symbol in REPLACE_SYMS:
             value = event.symbol
         else:
             value = event.string or event.symbol
         self.data.append(KeyData(datetime.now(), True, True, True, True, value))
+        return True
+
+    def btn_press(self, evt):
+        if evt.pressed:
+            action = "pressed"
+            self.image_listener(self.inflect_engine.number_to_words(evt.btn))
+        else:
+            action = "released"
+
+            # For some reason, middle mouseclick button doesn't appear if this is uncommented
+            # self.image_listener("released")
+
+        self.logger.debug("Mouse button %d %s" % (evt.btn, action))
+
         return True

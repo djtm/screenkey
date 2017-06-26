@@ -42,10 +42,10 @@ else:
     from . import keysyms
 
 import sys
+
 if sys.version_info.major < 3:
     import glib
 else:
-    import gi
     from gi.repository import GLib as glib
 
 import threading
@@ -142,7 +142,6 @@ def keysym_to_unicode(keysym):
     return None
 
 
-
 class KeyData():
     def __init__(self, pressed=None, filtered=None, repeated=None,
                  string=None, keysym=None, status=None, symbol=None,
@@ -158,24 +157,29 @@ class KeyData():
         self.modifiers = modifiers
 
 
+class ButtonData():
+    def __init__(self, btn, pressed):
+        self.btn = btn
+        self.pressed = pressed == xlib.ButtonPress
+
+
 class InputType:
     keyboard = 0b001
-    button   = 0b010
+    button = 0b010
     movement = 0b100
-    all      = 0b111
-
+    all = 0b111
 
 
 class InputListener(threading.Thread):
-    def __init__(self, callback, input_types=InputType.all, kbd_compose=True, kbd_translate=True):
+    def __init__(self, kbd_callback, btn_callback, input_types=InputType.all, kbd_compose=True, kbd_translate=True):
         super(InputListener, self).__init__()
-        self.callback = callback
+        self.kbd_callback = kbd_callback
+        self.btn_callback = btn_callback
         self.input_types = input_types
         self.kbd_compose = kbd_compose
         self.kbd_translate = kbd_translate
         self.lock = threading.Lock()
         self.stopped = True
-
 
     def _event_received(self, ev):
         if xlib.KeyPress <= ev.type <= xlib.MotionNotify:
@@ -190,17 +194,19 @@ class InputListener(threading.Thread):
             fwd_ev.xclient.data[0] = ev.type
             xlib.XSendEvent(self.replay_dpy, self.replay_win, False, 0, fwd_ev)
 
+    def _kdb_event_callback(self, data):
+        self.kbd_callback(data)
+        return False
 
-    def _event_callback(self, data):
-        self.callback(data)
+    def _btn_event_callback(self, data):
+        self.btn_callback(data)
         return False
 
     def _event_processed(self, data):
         data.symbol = xlib.XKeysymToString(data.keysym)
         if data.string is None:
             data.string = keysym_to_unicode(data.keysym)
-        glib.idle_add(self._event_callback, data)
-
+        glib.idle_add(self._kdb_event_callback, data)
 
     def _event_modifiers(self, kev, data):
         data.modifiers = modifiers = {}
@@ -212,7 +218,6 @@ class InputListener(threading.Thread):
         modifiers['hyper'] = bool(kev.state & xlib.Mod3Mask)
         modifiers['super'] = bool(kev.state & xlib.Mod4Mask)
         modifiers['alt_gr'] = bool(kev.state & xlib.Mod5Mask)
-
 
     def _event_keypress(self, kev, data):
         buf = xlib.create_string_buffer(16)
@@ -232,24 +237,20 @@ class InputListener(threading.Thread):
         data.keysym = keysym.value
         data.status = status.value
 
-
     def _event_lookup(self, kev, data):
         # this is mostly for debugging: we do not account for group/level
         data.keysym = xlib.XkbKeycodeToKeysym(kev.display, kev.keycode, 0, 0)
-
 
     def start(self):
         self.lock.acquire()
         self.stopped = False
         super(InputListener, self).start()
 
-
     def stop(self):
         with self.lock:
             if not self.stopped:
                 self.stopped = True
                 xlib.XRecordDisableContext(self.control_dpy, self.record_ctx)
-
 
     def _kbd_init(self):
         self._kbd_last_ev = xlib.XEvent()
@@ -271,15 +272,12 @@ class InputListener(threading.Thread):
                                               None)
         xlib.XSetICFocus(self._kbd_replay_xic)
 
-
     def _kbd_del(self):
         xlib.XDestroyIC(self._kbd_replay_xic)
         xlib.XCloseIM(self._kbd_replay_xim)
 
-
     def _kbd_process(self, ev):
-        if ev.type == xlib.ClientMessage and \
-           ev.xclient.message_type == self.custom_atom:
+        if ev.type == xlib.ClientMessage and ev.xclient.message_type == self.custom_atom:
             if ev.xclient.data[0] in [xlib.FocusIn, xlib.FocusOut]:
                 # we do not keep track of multiple XICs, just reset
                 xic = xlib.Xutf8ResetIC(self._kbd_replay_xic)
@@ -293,7 +291,7 @@ class InputListener(threading.Thread):
         # pass _all_ events to XFilterEvent
         filtered = bool(xlib.XFilterEvent(ev, 0))
         if ev.type == xlib.KeyRelease and \
-           phantom_release(self.replay_dpy, ev.xkey):
+                phantom_release(self.replay_dpy, ev.xkey):
             return
         if ev.type not in [xlib.KeyPress, xlib.KeyRelease]:
             return
@@ -314,6 +312,10 @@ class InputListener(threading.Thread):
         self._event_processed(data)
         self._kbd_last_ev = ev
 
+    def _btn_process(self, ev):
+        if ev.type in [xlib.ButtonPress, xlib.ButtonRelease]:
+            data = ButtonData(ev.xbutton.button, ev.type)
+            glib.idle_add(self._btn_event_callback, data)
 
     def run(self):
         # control connection
@@ -370,8 +372,12 @@ class InputListener(threading.Thread):
             if replay_fd in r_fd:
                 ev = xlib.XEvent()
                 xlib.XNextEvent(self.replay_dpy, xlib.byref(ev))
+
                 if self.input_types & InputType.keyboard:
                     self._kbd_process(ev)
+
+                if self.input_types & InputType.button:
+                    self._btn_process(ev)
 
         # finalize
         xlib.XRecordFreeContext(self.control_dpy, self.record_ctx)
@@ -386,7 +392,6 @@ class InputListener(threading.Thread):
         xlib.XCloseDisplay(self.replay_dpy)
 
 
-
 if __name__ == '__main__':
     def callback(data):
         values = {}
@@ -394,6 +399,7 @@ if __name__ == '__main__':
             if k[0] == '_': continue
             values[k] = getattr(data, k)
         print(values)
+
 
     glib.threads_init()
     kl = InputListener(callback)
