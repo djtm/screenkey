@@ -25,6 +25,13 @@ import gtk
 import pango
 
 
+def resize_height(img, height):
+    pixbuf = img.get_pixbuf()
+    new_width = int(pixbuf.get_width() * height / pixbuf.get_height())
+    pixbuf = pixbuf.scale_simple(new_width, height, gtk.gdk.INTERP_BILINEAR)
+    img.set_from_pixbuf(pixbuf)
+
+
 class Screenkey(gtk.Window):
     STATE_FILE = os.path.join(glib.get_user_config_dir(), 'screenkey.json')
 
@@ -79,22 +86,33 @@ class Screenkey(gtk.Window):
         self.label.set_ellipsize(pango.ELLIPSIZE_START)
         self.label.set_justify(gtk.JUSTIFY_CENTER)
         self.label.show()
-        # self.add(self.label)
+        self.add(self.label)
 
-        self.image = gtk.Image()
-        self.image.show()
-        # self.add(self.image)
+        self.img = gtk.Image()
+        self.img.show()
 
         self.set_gravity(gtk.gdk.GRAVITY_CENTER)
         self.connect("configure-event", self.on_configure)
         scr = self.get_screen()
         scr.connect("size-changed", self.on_configure)
+        # self.queue_draw()
+        # self.label.show()
+        # self.label.hide()
         scr.connect("monitors-changed", self.on_monitors_changed)
         self.set_active_monitor(self.options.screen)
 
         self.font = pango.FontDescription(self.options.font_desc)
         self.update_colors()
         self.update_label()
+        # self.queue_draw()
+        # self.label.show()
+        # self.label.hide()
+
+        # gtk,Image height is set to the height of what gtk.Label is going to be
+        # is there a better way than quickly showing and hiding to set gtk.Label's allocation?
+        self.show()
+        self.hide()
+
 
         self.labelmngr = None
         self.enabled = True
@@ -256,14 +274,22 @@ class Screenkey(gtk.Window):
 
     def on_image_change(self, image_file):
         child = self.get_child()
+        height = None
 
-        if child != self.image:
+        if child is not None:
+            height = child.get_allocation().height
+
+        if child != self.img:
             if child is not None:
                 self.remove(child)
 
-            self.add(self.image)
+            self.add(self.img)
 
-        self.image.set_from_file("images/%s.png" % image_file)
+        self.img.set_from_file("images/%s.png" % image_file)
+
+        if height is not None:
+            resize_height(self.img, height)
+
         self.timed_show()
 
     def on_timeout_main(self):

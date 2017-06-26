@@ -9,7 +9,6 @@ from collections import namedtuple
 from datetime import datetime
 
 import glib
-import inflect
 
 from .inputlistener import InputListener, InputType
 
@@ -166,7 +165,6 @@ class LabelManager(object):
         self.kl = None
         self.font_families = {x.get_name() for x in pango_ctx.list_families()}
         self.update_replacement_map()
-        self.inflect_engine = inflect.engine()
 
     def __del__(self):
         self.stop()
@@ -439,7 +437,7 @@ class LabelManager(object):
     def btn_press(self, evt):
         if evt.pressed:
             action = "pressed"
-            self.image_listener(self.inflect_engine.number_to_words(evt.btn))
+            self.image_listener(evt.btn)
         else:
             action = "released"
 
