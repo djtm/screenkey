@@ -113,7 +113,6 @@ class Screenkey(gtk.Window):
         self.show()
         self.hide()
 
-
         self.labelmngr = None
         self.enabled = True
         self.on_change_mode()
