@@ -269,17 +269,17 @@ class LabelManager(object):
 
     def key_press(self, event):
         if event.pressed == False:
-            self.logger.debug("Key released {:5}(ks): {}".format(event.keysym, event.symbol))
+            self.logger.debug(_("Key released") + " {:5}(ks): {}".format(event.keysym, event.symbol))
             return
         if event.symbol in self.ignore:
-            self.logger.debug("Key ignored  {:5}(ks): {}".format(event.keysym, event.symbol))
+            self.logger.debug(_("Key ignored") + " {:5}(ks): {}".format(event.keysym, event.symbol))
             return
         if event.filtered:
-            self.logger.debug("Key filtered {:5}(ks): {}".format(event.keysym, event.symbol))
+            self.logger.debug(_("Key filtered") + " {:5}(ks): {}".format(event.keysym, event.symbol))
         else:
-            state = "repeated" if event.repeated else "pressed"
+            state = _("repeated") if event.repeated else _("pressed")
             string = repr(event.string)
-            self.logger.debug("Key {:8} {:5}(ks): {} ({}, mask: {:08b})".format
+            self.logger.debug(_("Key") + " {:8} {:5}(ks): {} ({}, mask: {:08b})".format
                               (state, event.keysym, string, event.symbol, event.mods_mask))
 
         # Stealth enable/disable handling

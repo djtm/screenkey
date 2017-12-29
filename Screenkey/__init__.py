@@ -1,5 +1,5 @@
 import gettext
-gettext.install('screenkey', unicode=True)
+gettext.install('screenkey', localedir='po', unicode=True)
 
 # Screenkey version
 APP_NAME = "Screenkey"
